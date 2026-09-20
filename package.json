@@ -1,0 +1,14 @@
+{
+  "name": "mangaharvest-queue",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that triggers the MangaHarvest queue updater.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.45.0"
+  }
+}

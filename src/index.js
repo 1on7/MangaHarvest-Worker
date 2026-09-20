@@ -1,0 +1,84 @@
+const DEFAULT_LIMIT = 10;
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=UTF-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function getBaseUrl(value) {
+  if (!value) return "";
+  return value.replace(/\/+$/, "");
+}
+
+async function runQueue(env, cron) {
+  const baseUrl = getBaseUrl(env.MANGA_HARVEST_URL);
+  const secret = env.CRON_SECRET;
+
+  if (!baseUrl) {
+    throw new Error("MANGA_HARVEST_URL is not configured");
+  }
+
+  if (!secret) {
+    throw new Error("CRON_SECRET is not configured");
+  }
+
+  const limit = env.UPDATE_LIMIT || DEFAULT_LIMIT;
+  const endpoint =
+    `${baseUrl}/api/v1/cron/update?limit=${encodeURIComponent(limit)}`;
+
+  const response = await fetch(endpoint, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${secret}`,
+      Accept: "application/json",
+      "User-Agent": "MangaHarvest-Cloudflare-Worker/1.0",
+    },
+  });
+
+  const body = await response.text();
+
+  console.log(
+    JSON.stringify({
+      cron,
+      endpoint,
+      status: response.status,
+      body: body.slice(0, 4000),
+    })
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `MangaHarvest queue returned HTTP ${response.status}: ${body.slice(0, 500)}`
+    );
+  }
+
+  return {
+    status: response.status,
+    body,
+  };
+}
+
+export default {
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(runQueue(env, controller.cron));
+  },
+
+  async fetch(request) {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/" || url.pathname === "/health") {
+      return json({
+        service: "MangaHarvest Queue Worker",
+        status: "ok",
+        scheduler: "cloudflare-cron",
+      });
+    }
+
+    return json({ error: "Not Found" }, 404);
+  },
+};

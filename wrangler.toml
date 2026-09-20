@@ -1,6 +1,9 @@
-name = "mangaharvest-queue"
+name = "mangaharvest-worker"
 main = "src/index.js"
 compatibility_date = "2026-09-20"
+
+workers_dev = true
+preview_urls = true
 
 [triggers]
 crons = ["*/5 * * * *"]

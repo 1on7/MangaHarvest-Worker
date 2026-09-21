@@ -65,8 +65,36 @@ async function runQueue(env, cron) {
 }
 
 export default {
-  async scheduled(controller, env, ctx) {
-    ctx.waitUntil(runQueue(env, controller.cron));
+  async scheduled(controller, env) {
+    const cron = controller.cron;
+
+    try {
+      console.log(JSON.stringify({
+        event: "cron_start",
+        cron,
+        scheduledTime: controller.scheduledTime,
+      }));
+
+      await runQueue(env, cron);
+
+      console.log(JSON.stringify({
+        event: "cron_success",
+        cron,
+      }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+
+      console.error(JSON.stringify({
+        event: "cron_error",
+        cron,
+        scheduledTime: controller.scheduledTime,
+        error: message,
+        stack,
+      }));
+
+      throw error;
+    }
   },
 
   async fetch(request) {

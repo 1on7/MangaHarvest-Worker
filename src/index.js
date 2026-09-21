@@ -1,4 +1,4 @@
-const DEFAULT_LIMIT = 10;
+const DEFAULT_LIMIT = 1;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -27,7 +27,8 @@ async function runQueue(env, cron) {
     throw new Error("CRON_SECRET is not configured");
   }
 
-  const limit = env.UPDATE_LIMIT || DEFAULT_LIMIT;
+  const configuredLimit = Number(env.UPDATE_LIMIT || DEFAULT_LIMIT);
+  const limit = Math.min(Math.max(Number.isFinite(configuredLimit) ? configuredLimit : DEFAULT_LIMIT, 1), 2);
   const endpoint =
     `${baseUrl}/api/v1/cron/update?limit=${encodeURIComponent(limit)}`;
 
